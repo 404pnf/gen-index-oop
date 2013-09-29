@@ -2,11 +2,11 @@
 # 返回该目录下所有的目录，递归
 # 返回的是一个数组
 module GetDir
-	def get_dir(path)
-		Dir["#{path}/**/*"].select { |e| File.directory? e}
-	end
+  def get_dir(path)
+    Dir["#{path}/**/*"].select { |e| File.directory? e}
+  end
 
-	module_function :get_dir
+  module_function :get_dir
 end
 
 # 输入是一个目录
@@ -14,58 +14,58 @@ end
 # 输出是数组
 class IndexHtml
 
-	require 'cgi'
-	require 'erubis'
+  require 'cgi'
+  require 'erubis'
 
-	attr_accessor :path, :tpl, :domain
+  attr_accessor :path, :tpl, :domain
 
-	def initialize(path, tpl = 'index.eruby', domain = '/')
-		@path = path
-		@tpl = tpl
-		@domain = domain
-		@context = self.context
-	end
+  def initialize(path, tpl = 'index.eruby', domain = '/')
+    @path = path
+    @tpl = tpl
+    @domain = domain
+    @context = self.context
+  end
 
-	def write
-   self.del
-   eruby = Erubis::Eruby.new(File.read(@tpl))
-   index_html =  eruby.evaluate(@context)
-   out = File.join(@path, 'index.html')
-   p "generating #{out}"
-   File.write(out, index_html)
- end
+  def write
+    self.del
+    eruby = Erubis::Eruby.new(File.read(@tpl))
+    index_html =  eruby.evaluate(@context)
+    out = File.join(@path, 'index.html')
+    p "generating #{out}"
+    File.write(out, index_html)
+  end
 
- def del_index
-  Dir["#{@path}/**/index.html"].each { |e| File.delete e; p "deleting #{e}" }
-end
+  def del_index
+    Dir["#{@path}/**/index.html"].each { |e| File.delete e; p "deleting #{e}" }
+  end
 
-protected
+  protected
 
-def context
-  {
-   :title => self.title,
-   :links	 => self.links,
-   :domain => self.domain,
- }
-end
+  def context
+    {
+      :title => self.title,
+      :links   => self.links,
+      :domain => self.domain,
+    }
+  end
 
-def files
-		Dir["#{@path}/*"].map { |e| File.basename e} # no unix dot files
-	end
+  def files
+    Dir["#{@path}/*"].map { |e| File.basename e} # no unix dot files
+  end
 
-	def title
-		@path.split('/').last
-	end
+  def title
+    @path.split('/').last
+  end
 
-	def links
-		self.files.map { |e| [e, CGI.escape(e)]}.sort
-	end
+  def links
+    self.files.map { |e| [e, CGI.escape(e)]}.sort
+  end
 
 end
 
 # 执行
 if __FILE__ == $PROGRAM_NAME
-	inputdir = ARGV[0]
+  inputdir = ARGV[0]
   p "inputdir is #{inputdir}"
   GetDir.get_dir(inputdir).each { |e| IndexHtml.new(e).write }
 end
