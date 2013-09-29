@@ -1,4 +1,3 @@
-require 'pp'
 # 输入一个目录
 # 返回该目录下所有的目录，递归
 # 返回的是一个数组
@@ -15,9 +14,7 @@ end
 # 输出是数组
 class IndexHtml
 
-	#require 'fileutils'
 	require 'cgi'
-	#require 'find'
 	require 'erubis'
 
 	attr_accessor :path, :tpl, :domain
@@ -26,10 +23,34 @@ class IndexHtml
 		@path = path
 		@tpl = tpl
 		@domain = domain
+		@context = self.context
+	end
+
+	def write
+		self.del
+		eruby = Erubis::Eruby.new(File.read(@tpl))
+		index_html =  eruby.evaluate(@context)
+		out = File.join(@path, 'index.html')
+		p "generating #{out}"
+		File.write(out, index_html)
+	end
+
+	def del_index
+		Dir["#{@path}/**/index.html"].each { |e| File.delete e; p "deleting #{e}" }
+	end
+
+	protected
+
+	def context
+		{
+			:title => self.title,
+			:links	 => self.links,
+			:domain => self.domain,
+		}
 	end
 
 	def files
-		@files = Dir["#{@path}/*"].map { |e| File.basename e}
+		Dir["#{@path}/*"].map { |e| File.basename e} # no unix dot files
 	end
 
 	def title
@@ -37,27 +58,14 @@ class IndexHtml
 	end
 
 	def links
-		@links = self.files.map { |e| [e, CGI.escape(e)]}.sort
-	end
-
-	def context
-		@context = {
-			:title => self.title,
-			:links	 => self.links,
-			:domain => self.domain,
-		}
-	end
-
-	def write
-		Dir["#{path}/**/index.html"].each { |e| File.delete e }
-		eruby = Erubis::Eruby.new(File.read(@tpl))
-    index_html =  eruby.evaluate(self.context)
-		out = File.join(@path, 'index.html')
-		File.write(out, index_html)
+		self.files.map { |e| [e, CGI.escape(e)]}.sort
 	end
 
 end
 
-GetDir.get_dir('.').each { |e|
-	IndexHtml.new(e).write
-}
+require 'pp'
+if __FILE__ == $PROGRAM_NAME
+	inputdir = ARGV[0]
+  p "inputdir is #{inputdir}"
+	GetDir.get_dir(inputdir).each { |e| IndexHtml.new(e).write }
+end
