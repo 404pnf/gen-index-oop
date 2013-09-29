@@ -27,29 +27,29 @@ class IndexHtml
 	end
 
 	def write
-  	self.del
-		eruby = Erubis::Eruby.new(File.read(@tpl))
-		index_html =  eruby.evaluate(@context)
-		out = File.join(@path, 'index.html')
-		p "generating #{out}"
-		File.write(out, index_html)
-	end
+   self.del
+   eruby = Erubis::Eruby.new(File.read(@tpl))
+   index_html =  eruby.evaluate(@context)
+   out = File.join(@path, 'index.html')
+   p "generating #{out}"
+   File.write(out, index_html)
+ end
 
-	def del_index
-		Dir["#{@path}/**/index.html"].each { |e| File.delete e; p "deleting #{e}" }
-	end
+ def del_index
+  Dir["#{@path}/**/index.html"].each { |e| File.delete e; p "deleting #{e}" }
+end
 
-	protected
+protected
 
-	def context
-		{
-			:title => self.title,
-			:links	 => self.links,
-			:domain => self.domain,
-		}
-	end
+def context
+  {
+   :title => self.title,
+   :links	 => self.links,
+   :domain => self.domain,
+ }
+end
 
-	def files
+def files
 		Dir["#{@path}/*"].map { |e| File.basename e} # no unix dot files
 	end
 
@@ -68,5 +68,5 @@ require 'pp'
 if __FILE__ == $PROGRAM_NAME
 	inputdir = ARGV[0]
   p "inputdir is #{inputdir}"
-	GetDir.get_dir(inputdir).each { |e| IndexHtml.new(e).write }
+  GetDir.get_dir(inputdir).each { |e| IndexHtml.new(e).write }
 end
