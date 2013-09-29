@@ -27,7 +27,7 @@ class IndexHtml
 	end
 
 	def write
-		self.del
+  	self.del
 		eruby = Erubis::Eruby.new(File.read(@tpl))
 		index_html =  eruby.evaluate(@context)
 		out = File.join(@path, 'index.html')
