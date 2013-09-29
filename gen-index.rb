@@ -63,7 +63,7 @@ def files
 
 end
 
-# 执行
+# 执行 
 if __FILE__ == $PROGRAM_NAME
 	inputdir = ARGV[0]
   p "inputdir is #{inputdir}"
