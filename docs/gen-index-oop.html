@@ -46,9 +46,11 @@
                 <a class="pilcrow" href="#section-2">&#182;</a>
               </div>
               <h2>帮助函数</h2>
-<p>输入一个目录</p>
-<p>返回该目录下所有的目录，递归</p>
-<p>返回的是一个数组</p>
+<ol>
+<li>输入一个目录</li>
+<li>返回该目录下所有的目录，递归。因为使用Dir.glob因此不包含隐藏目录，即以英文 . 开头的目录</li>
+<li>返回的是一个数组</li>
+</ol>
 <hr>
 
             </div>
@@ -65,7 +67,12 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="class"><span class="keyword">module</span> <span class="title">GetDir</span></span></pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="class"><span class="keyword">module</span> <span class="title">GenIndex</span></span>
+  <span class="function"><span class="keyword">def</span> <span class="title">get_dir</span><span class="params">(path)</span></span>
+    <span class="constant">Dir</span>[<span class="string">"<span class="subst">#{ path.chomp(<span class="string">'/'</span>) }</span>/**/*"</span>].select { |e| <span class="constant">File</span>.directory? e } + [path] <span class="comment"># 把输入目录添加到结果数组中</span>
+  <span class="keyword">end</span>
+
+  module_function <span class="symbol">:get_dir</span></pre></div></div>
             
         </li>
         
@@ -73,33 +80,14 @@
         <li id="section-4">
             <div class="annotation">
               
-              <div class="pilwrap ">
+              <div class="pilwrap for-h2">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <p>把输入目录添加到结果数组中</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="function"><span class="keyword">def</span> <span class="title">get_dir</span><span class="params">(path)</span></span>
-    <span class="constant">Dir</span>[<span class="string">"<span class="subst">#{path}</span>/**/*"</span>].select { |e| <span class="constant">File</span>.directory? e} + [path]
-  <span class="keyword">end</span>
-
-  module_function <span class="symbol">:get_dir</span>
-<span class="keyword">end</span></pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-5">
-            <div class="annotation">
-              
-              <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-5">&#182;</a>
-              </div>
               <h2>用类封装</h2>
-<p>输入是一个目录。</p>
-<p>输出是该目录下所有文件列表，不包括以英文点开头的文件。</p>
-<p>输出是数组</p>
+<ol>
+<li>输入是一个目录。</li>
+<li>输出index.html文件，内容是该目录下所有文件列表，不包括以英文点开头的文件。</li>
+</ol>
 <hr>
 
             </div>
@@ -107,124 +95,91 @@
         </li>
         
         
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="class"><span class="keyword">class</span> <span class="title">IndexHtml</span></span>
+
+    <span class="keyword">require</span> <span class="string">'cgi'</span>
+    <span class="keyword">require</span> <span class="string">'erubis'</span>
+
+    attr_accessor <span class="symbol">:path</span>, <span class="symbol">:tpl</span>, <span class="symbol">:domain</span>
+
+    <span class="function"><span class="keyword">def</span> <span class="title">initialize</span><span class="params">(path, tpl = <span class="string">'index.eruby'</span>, domain = <span class="string">'/'</span>)</span></span>
+      <span class="variable">@path</span> = path.chomp
+      <span class="variable">@tpl</span> = tpl
+      <span class="variable">@domain</span> = domain
+    <span class="keyword">end</span>
+
+    <span class="function"><span class="keyword">def</span> <span class="title">write_index</span></span>
+      <span class="variable">@context</span> = context
+      eruby = <span class="constant">Erubis::Eruby</span>.new(<span class="constant">File</span>.read(<span class="variable">@tpl</span>))
+      index_html =  eruby.evaluate(<span class="variable">@context</span>)
+      out = <span class="constant">File</span>.join(<span class="variable">@path</span>, <span class="string">'index.html'</span>)
+      p <span class="string">"deleting <span class="subst">#{ out }</span>"</span>
+      <span class="constant">File</span>.delete out <span class="keyword">if</span> <span class="constant">File</span>.exists?(out)
+      p <span class="string">"generating <span class="subst">#{ out }</span>"</span>
+      <span class="constant">File</span>.write(out, index_html)
+    <span class="keyword">end</span>
+
+    private
+
+    <span class="function"><span class="keyword">def</span> <span class="title">context</span></span>
+      {
+        <span class="symbol">title:</span> title,
+        <span class="symbol">links:</span> links,
+        <span class="symbol">domain:</span> <span class="variable">@domain</span>,
+      }
+    <span class="keyword">end</span>
+
+    <span class="function"><span class="keyword">def</span> <span class="title">files</span></span>
+      <span class="constant">Dir</span>[<span class="string">"<span class="subst">#{<span class="variable">@path</span>}</span>/*"</span>].map { |e| <span class="constant">File</span>.basename e } <span class="comment"># Dir.glob, no unix dot files</span>
+    <span class="keyword">end</span>
+
+    <span class="function"><span class="keyword">def</span> <span class="title">title</span></span>
+      <span class="variable">@path</span>.split(<span class="string">'/'</span>).last
+    <span class="keyword">end</span>
+
+    <span class="function"><span class="keyword">def</span> <span class="title">links</span></span>
+      files.map { |e| [e, <span class="constant">CGI</span>.escape(e)] }.sort
+    <span class="keyword">end</span>
+
+  <span class="keyword">end</span> <span class="comment"># end class</span>
+
+<span class="keyword">end</span> <span class="comment"># end Module</span></pre></div></div>
+            
+        </li>
+        
+        
         <li id="section-6">
             <div class="annotation">
               
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-6">&#182;</a>
-              </div>
-              
-            </div>
-            
-            <div class="content"><div class='highlight'><pre><span class="class"><span class="keyword">class</span> <span class="title">IndexHtml</span></span></pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-7">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-7">&#182;</a>
-              </div>
-              <p>我还不知道这种情况下如何使用erb</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">require</span> <span class="string">'cgi'</span>
-  <span class="keyword">require</span> <span class="string">'erubis'</span></pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-8">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-8">&#182;</a>
-              </div>
-              <p>require &#39;erb&#39;</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  attr_accessor <span class="symbol">:path</span>, <span class="symbol">:tpl</span>, <span class="symbol">:domain</span>
-
-  <span class="function"><span class="keyword">def</span> <span class="title">initialize</span><span class="params">(path, tpl = <span class="string">'index.eruby'</span>, domain = <span class="string">'/'</span>)</span></span>
-    <span class="variable">@path</span> = path
-    <span class="variable">@tpl</span> = tpl
-    <span class="variable">@domain</span> = domain
-    <span class="variable">@context</span> = <span class="keyword">self</span>.context
-  <span class="keyword">end</span>
-
-  <span class="function"><span class="keyword">def</span> <span class="title">write</span></span>
-    <span class="keyword">self</span>.del_index
-    eruby = <span class="constant">Erubis::Eruby</span>.new(<span class="constant">File</span>.read(<span class="variable">@tpl</span>))
-    index_html =  eruby.evaluate(<span class="variable">@context</span>)</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-9">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-9">&#182;</a>
-              </div>
-              <p>index_html = ERB.new(File.read(@tpl)).result binding</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    out = <span class="constant">File</span>.join(<span class="variable">@path</span>, <span class="string">'index.html'</span>)
-    p <span class="string">"generating <span class="subst">#{out}</span>"</span>
-    <span class="constant">File</span>.write(out, index_html)
-  <span class="keyword">end</span>
-
-  <span class="function"><span class="keyword">def</span> <span class="title">del_index</span></span>
-    <span class="constant">Dir</span>[<span class="string">"<span class="subst">#{<span class="variable">@path</span>}</span>/**/index.html"</span>].each { |e| <span class="constant">File</span>.delete e; p <span class="string">"deleting <span class="subst">#{e}</span>"</span> }
-  <span class="keyword">end</span>
-
-  protected
-
-  <span class="function"><span class="keyword">def</span> <span class="title">context</span></span>
-    {
-      <span class="symbol">:title</span> =&gt; <span class="keyword">self</span>.title,
-      <span class="symbol">:links</span>   =&gt; <span class="keyword">self</span>.links,
-      <span class="symbol">:domain</span> =&gt; <span class="keyword">self</span>.domain,
-    }
-  <span class="keyword">end</span>
-
-  <span class="function"><span class="keyword">def</span> <span class="title">files</span></span>
-    <span class="constant">Dir</span>[<span class="string">"<span class="subst">#{<span class="variable">@path</span>}</span>/*"</span>].map { |e| <span class="constant">File</span>.basename e} <span class="comment"># no unix dot files</span>
-  <span class="keyword">end</span>
-
-  <span class="function"><span class="keyword">def</span> <span class="title">title</span></span>
-    <span class="variable">@path</span>.split(<span class="string">'/'</span>).last
-  <span class="keyword">end</span>
-
-  <span class="function"><span class="keyword">def</span> <span class="title">links</span></span>
-    <span class="keyword">self</span>.files.map { |e| [e, <span class="constant">CGI</span>.escape(e)]}.sort
-  <span class="keyword">end</span>
-
-<span class="keyword">end</span></pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-10">
-            <div class="annotation">
-              
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-10">&#182;</a>
+                <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
               <h2>干活</h2>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">if</span> __FILE_<span class="number">_</span> == <span class="variable">$PROGRAM_NAME</span>
-  inputdir = <span class="constant">ARGV</span>[<span class="number">0</span>] || <span class="string">'~/tmp/'</span>
-  p <span class="string">"inputdir is <span class="subst">#{inputdir}</span>"</span>
-  <span class="constant">GetDir</span>.get_dir(inputdir).each { |e| <span class="constant">IndexHtml</span>.new(e).write }
-<span class="keyword">end</span></pre></div></div>
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">def</span> <span class="title">gen_index</span><span class="params">(path)</span></span>
+  p <span class="string">"输入目录是 <span class="subst">#{path}</span>"</span>
+  p <span class="string">'请检查一下输入目录是否正确！输入yes继续。输入其它任意字符退出。'</span>
+  <span class="keyword">if</span> <span class="constant">STDIN</span>.getc == <span class="string">'y'</span>
+    <span class="constant">GenIndex</span>.get_dir(path).each <span class="keyword">do</span> |e|
+      <span class="constant">GenIndex::IndexHtml</span>.new(e).write_index
+    <span class="keyword">end</span>
+  <span class="keyword">else</span>
+    p <span class="string">'再来一次。这回别敲错目录了。'</span>
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+gen_index(<span class="constant">ARGV</span>[<span class="number">0</span>]) <span class="keyword">if</span> __FILE_<span class="number">_</span> == <span class="variable">$PROGRAM_NAME</span></pre></div></div>
             
         </li>
         

@@ -1,6 +1,7 @@
 # ## 使用方法
 #
 #     ruby script.rb inputdir
+#
 
 # ## 脚本目的
 #
@@ -12,88 +13,85 @@
 
 # ## 帮助函数
 #
-# 输入一个目录
-#
-# 返回该目录下所有的目录，递归
-#
-# 返回的是一个数组
+# 1. 输入一个目录
+# 1. 返回该目录下所有的目录，递归。因为使用Dir.glob因此不包含隐藏目录，即以英文 . 开头的目录
+# 1. 返回的是一个数组
 #
 # ----
-module GetDir
-  # 把输入目录添加到结果数组中
+module GenIndex
   def get_dir(path)
-    Dir["#{path}/**/*"].select { |e| File.directory? e} + [path]
+    Dir["#{ path.chomp('/') }/**/*"].select { |e| File.directory? e } + [path] # 把输入目录添加到结果数组中
   end
 
   module_function :get_dir
-end
 
-# ## 用类封装
-#
-# 输入是一个目录。
-#
-# 输出是该目录下所有文件列表，不包括以英文点开头的文件。
-#
-# 输出是数组
-#
-# ----
-class IndexHtml
+  # ## 用类封装
+  #
+  # 1. 输入是一个目录。
+  # 2. 输出index.html文件，内容是该目录下所有文件列表，不包括以英文点开头的文件。
+  #
+  # ----
+  class IndexHtml
 
-  # 我还不知道这种情况下如何使用erb
-  require 'cgi'
-  require 'erubis'
-  #require 'erb'
+    require 'cgi'
+    require 'erubis'
 
-  attr_accessor :path, :tpl, :domain
+    attr_accessor :path, :tpl, :domain
 
-  def initialize(path, tpl = 'index.eruby', domain = '/')
-    @path = path
-    @tpl = tpl
-    @domain = domain
-    @context = self.context
-  end
+    def initialize(path, tpl = 'index.eruby', domain = '/')
+      @path = path.chomp
+      @tpl = tpl
+      @domain = domain
+    end
 
-  def write
-    self.del_index
-    eruby = Erubis::Eruby.new(File.read(@tpl))
-    index_html =  eruby.evaluate(@context)
-    #index_html = ERB.new(File.read(@tpl)).result binding
-    out = File.join(@path, 'index.html')
-    p "generating #{out}"
-    File.write(out, index_html)
-  end
+    def write_index
+      @context = context
+      eruby = Erubis::Eruby.new(File.read(@tpl))
+      index_html =  eruby.evaluate(@context)
+      out = File.join(@path, 'index.html')
+      p "deleting #{ out }"
+      File.delete out if File.exists?(out)
+      p "generating #{ out }"
+      File.write(out, index_html)
+    end
 
-  def del_index
-    Dir["#{@path}/**/index.html"].each { |e| File.delete e; p "deleting #{e}" }
-  end
+    private
 
-  protected
+    def context
+      {
+        title: title,
+        links: links,
+        domain: @domain,
+      }
+    end
 
-  def context
-    {
-      :title => self.title,
-      :links   => self.links,
-      :domain => self.domain,
-    }
-  end
+    def files
+      Dir["#{@path}/*"].map { |e| File.basename e } # Dir.glob, no unix dot files
+    end
 
-  def files
-    Dir["#{@path}/*"].map { |e| File.basename e} # no unix dot files
-  end
+    def title
+      @path.split('/').last
+    end
 
-  def title
-    @path.split('/').last
-  end
+    def links
+      files.map { |e| [e, CGI.escape(e)] }.sort
+    end
 
-  def links
-    self.files.map { |e| [e, CGI.escape(e)]}.sort
-  end
+  end # end class
 
-end
+end # end Module
 
 # ## 干活
-if __FILE__ == $PROGRAM_NAME
-  inputdir = ARGV[0] || '~/tmp/'
-  p "inputdir is #{inputdir}"
-  GetDir.get_dir(inputdir).each { |e| IndexHtml.new(e).write }
+def gen_index(path)
+  p "输入目录是 #{path}"
+  p '请检查一下输入目录是否正确！输入yes继续。输入其它任意字符退出。'
+  if STDIN.getc == 'y'
+    GenIndex.get_dir(path).each do |e|
+      GenIndex::IndexHtml.new(e).write_index
+    end
+  else
+    p '再来一次。这回别敲错目录了。'
+  end
 end
+
+gen_index(ARGV[0]) if __FILE__ == $PROGRAM_NAME
