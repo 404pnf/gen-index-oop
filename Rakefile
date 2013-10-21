@@ -13,11 +13,6 @@ task :help do
   system('rake -T')
 end
 
-desc "generate index"
-task :gen do
-  time { gen_index }
-end
-
 desc "preview html"
 task :preview do
   system("python -m SimpleHTTPServer")
